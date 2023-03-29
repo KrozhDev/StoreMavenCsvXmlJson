@@ -9,7 +9,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
 
-        File textFile = new File("./out/basket.bin");
+        File textFile = new File("./src/main/resources.basket.bin");
 
         int productNumber = 0;
         int productCount = 0;
@@ -58,7 +58,7 @@ public class Main {
                     continue;
                 }
                 basket.addToCart(productNumber, productCount);
-                basket.saveBin(textFile);
+                ClientLog.log(productNumber,productCount);
 
             } catch (NumberFormatException e) {
                 System.out.println("Вы ввели не число!");
