@@ -1,25 +1,24 @@
+import org.xml.sax.SAXException;
 
-import java.io.File;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-import java.text.NumberFormat;
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException, ClassNotFoundException {
-
-        File textFile = new File("./src/main/resources.basket.bin");
+    public static void main(String[] args) throws ParserConfigurationException, IOException, SAXException {
 
         int productNumber = 0;
         int productCount = 0;
         Basket basket = null;
 
-        if (textFile.exists()) {
-            basket = Basket.loadFromBinFile(textFile);
-        } else {
-            basket = new Basket();
-        }
+        basket = new Basket();
+
+        //todo работаю с xml ниже
+
+        XmlSettings xmlSettings = new XmlSettings();
+
+        //todo работаю с xml выше
 
         for (int i = 0; i < basket.getGoods().length; i++) {
             System.out.println(i+1 + " " + basket.getGoods()[i] + " " + basket.getPrices()[i] + " руб/шт");
@@ -32,6 +31,7 @@ public class Main {
 
             if (input.equals("end")) {
                 basket.printCart();
+                ClientLog.exportAsCSV(ClientLog.getTxtFile());
                 break;
             }
 
