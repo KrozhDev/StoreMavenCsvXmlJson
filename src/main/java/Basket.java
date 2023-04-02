@@ -1,4 +1,7 @@
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import java.io.*;
 import java.util.Arrays;
 public class Basket implements Serializable {
@@ -18,6 +21,7 @@ public class Basket implements Serializable {
     public Basket(String[] goods, long[] prices) {
         this.goods = goods;
         this.prices = prices;
+        quantity = new long[]{0,0,0};;
     }
 
     public String[] getGoods() {
@@ -50,9 +54,51 @@ public class Basket implements Serializable {
         System.out.println("Общая стоимость " + sum + " рублей");
     }
 
-    public void saveTxt(File textFile) throws RuntimeException {
-        System.out.println("Сохраняю корзину в файл");
 
+
+    public void saveJSON(File file) {
+        try (PrintWriter writer = new PrintWriter(file)) {
+//            Gson gson = GsonBuilder().setPrettyPrinting().create;
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            String json = gson.toJson(this);
+            writer.print(json);
+
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Basket loadFromJSONFile(File file) {
+        Basket basket;
+        try(BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            StringBuilder builder = new StringBuilder();
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+            Gson gson = new Gson();
+            basket = gson.fromJson(builder.toString(), Basket.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return basket;
+    }
+
+    public static Basket loadFromTxtFile(File txtFile) {
+        Basket basket;
+        try {
+            BufferedReader bf = new BufferedReader(new FileReader(txtFile));
+
+            basket = new Basket();
+
+
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return basket;
+    }
+
+    public void saveTxt(File textFile) throws RuntimeException {
         try(PrintWriter out = new PrintWriter(textFile.getPath())) {
 
             for (String good: this.goods) {

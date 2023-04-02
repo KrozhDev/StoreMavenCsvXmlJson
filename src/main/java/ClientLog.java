@@ -1,17 +1,25 @@
+
 import com.opencsv.CSVWriter;
+import netscape.javascript.JSObject;
+import org.apache.commons.text.Builder;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static com.sun.management.HotSpotDiagnosticMXBean.ThreadDumpFormat.JSON;
 
 public class ClientLog {
-
-    //todo сделать методы записи в файл не статичными, а создавтаь экземпляр класса и туда
-    //todo в свой класс обновлять текстовый файл, а в конце уже вытащить его у
-    //todo у экземпляра класса и записать конечный csv-файл
 
     private static File txtFile = new File("./src/main/resources/txtFile");
     private static File csvFile;
     private static FileWriter fw;
+    private static JSObject jsonFile;
 
 
     static {
@@ -25,12 +33,21 @@ public class ClientLog {
         }
     }
 
+
+
+    static JSONObject obj = new JSONObject();
+    static JSONArray productNumList =new JSONArray();
+    static JSONArray amountList =new JSONArray();
+
+    private List<String[]> log = new ArrayList<>();
+
+
+
     public static File getTxtFile() {
         return txtFile;
     }
 
-
-    public static File log(int productNum, int amount) {
+    public static JSObject logJson(int productNum, int amount) {
 
         String newStr = new String("");
         StringBuilder sb = new StringBuilder("");
@@ -40,36 +57,60 @@ public class ClientLog {
         sb.append("\n");
         newStr = sb.toString();
 
-        try {
-            fw.write(newStr);
-            fw.flush();
+        productNumList.add(productNum);
+        amountList.add(amount);
+
+        obj.put("productNum", productNumList);
+        obj.put("amount", amountList);
+
+
+        try (FileWriter file = new FileWriter("log.json")) {
+            file.write(obj.toJSONString());
+            file.flush();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
-
-
-        return txtFile;
+        return jsonFile;
     }
 
-    public static File exportAsCSV(File txtFile) {
 
+    public void log(int productNum, int amount) {
+
+        log.add(new String[] {"" + productNum, "" + amount});
+    }
+
+    public static File jsonExportAsCSV() {
         csvFile = new File("./src/main/resources/csvFile");
 
-        try (BufferedReader br = new BufferedReader(new FileReader(txtFile));
-             CSVWriter writer = new CSVWriter(new FileWriter(csvFile));) {
+        JSONParser parser = new JSONParser();
+        try {
+            Object obj = parser.parse(new FileReader("log.json"));
+            CSVWriter writer = new CSVWriter(new FileWriter(csvFile));
 
-            String line = br.readLine();
-            while (line != null) {
+            JSONObject buyInfo = (JSONObject) obj;
 
-                String[] nextLine = line.trim().split(",");
-                writer.writeNext(nextLine,false);
-                line = br.readLine();
+            JSONArray productNum = (JSONArray) buyInfo.get("productNum");
+            JSONArray amount = (JSONArray) buyInfo.get("amount");
 
-            }
-        } catch (IOException e) {
+            writer.writeNext((String[]) productNum.stream().toArray());
+
+        } catch (IOException | ParseException e) {
             throw new RuntimeException(e);
         }
 
-        return csvFile;
+    return csvFile;
     }
+
+    public void exportAsCSV(File txtFile) {
+        if (!txtFile.exists()) {
+            log.add(0,new String[] {"productNum,amount"});
+        }
+        try(CSVWriter writer = new CSVWriter(new FileWriter(txtFile,true))) {
+            writer.writeAll(log);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
 }

@@ -1,24 +1,36 @@
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
+import java.io.File;
 import java.util.Scanner;
+
 
 public class Main {
 
-    public static void main(String[] args) throws ParserConfigurationException, IOException, SAXException {
+    static String[] products = new String[]{"Хлеб", "Яблоки", "Молоко"};
+    static long[] prices = new long[]{100, 200, 300};
+
+    static long[] quantity = new long[]{0,0,0};
+
+    static File pom = new File("shop.xml");
+
+    public static void main(String[] args) {
 
         int productNumber = 0;
         int productCount = 0;
-        Basket basket = null;
 
-        basket = new Basket();
 
-        //todo работаю с xml ниже
 
-        XmlSettings xmlSettings = new XmlSettings();
+        ClientLog log = new ClientLog();
 
-        //todo работаю с xml выше
+
+        XMLSettings settings = new XMLSettings(new File("shop.xml"));
+
+        File loadFile = new File(settings.loadFile);
+        File saveFile = new File(settings.saveFile);
+        File logFile = new File(settings.logFile);
+
+        Basket basket = createBasket(loadFile, settings.isLoad, settings.loadFormat);
+
+
+
 
         for (int i = 0; i < basket.getGoods().length; i++) {
             System.out.println(i+1 + " " + basket.getGoods()[i] + " " + basket.getPrices()[i] + " руб/шт");
@@ -30,8 +42,11 @@ public class Main {
             String input = scanner.nextLine();
 
             if (input.equals("end")) {
+                if(settings.isLog) {
+                    log.exportAsCSV(logFile);
+                }
                 basket.printCart();
-                ClientLog.exportAsCSV(ClientLog.getTxtFile());
+                log.exportAsCSV(logFile);
                 break;
             }
 
@@ -58,7 +73,18 @@ public class Main {
                     continue;
                 }
                 basket.addToCart(productNumber, productCount);
-                ClientLog.log(productNumber,productCount);
+                if (settings.isLog) {
+                    log.log(productNumber,productCount);
+                }
+                if (settings.isSave){
+                    switch (settings.saveFormat) {
+                        case "json" -> basket.saveJSON(saveFile);
+                        case "txt" -> basket.saveTxt(saveFile);
+                    }
+                }
+                basket.saveJSON(saveFile);
+
+
 
             } catch (NumberFormatException e) {
                 System.out.println("Вы ввели не число!");
@@ -66,5 +92,20 @@ public class Main {
                 continue;
             }
         }
+    }
+
+    private static Basket createBasket(File loadFile, boolean isLoad, String loadFormat) {
+        Basket basket;
+
+        if (isLoad && loadFile.exists()) {
+            switch (loadFormat) {
+                case "json" -> basket = Basket.loadFromJSONFile(loadFile);
+                case "txt" -> basket = Basket.loadFromTxtFile(loadFile);
+                default -> basket = new Basket(products, prices);
+            }
+        } else {
+            basket = new Basket(products,prices);
+        }
+        return basket;
     }
 }
